@@ -2,9 +2,9 @@
 from grandalf.graphs import Vertex,Edge
 
 # horizontal coord assigment verifier:
-v = range(1,24)
+v = list(range(1,24))
 V = [Vertex(x) for x in map(str,v)]
-D = dict(zip(v,V))
+D = dict(list(zip(v,V)))
 e = [(1,13), (1,21), (1,4), (1,3), (2,3), (2,20),
      (3,4), (3,5), (3,23),
      (4,6), (5,7),

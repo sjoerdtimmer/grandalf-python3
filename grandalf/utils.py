@@ -25,8 +25,8 @@ class  Poset(object):
                 self.o.append(obj)
                 s.add(obj)
             else:
-                print 'warning: obj was already added in poset at index %d' \
-                      %s.index(obj)
+                print('warning: obj was already added in poset at index %d' \
+                      %s.index(obj))
         self.s = s
 
     def __repr__(self):
@@ -68,7 +68,7 @@ class  Poset(object):
         return other.s==self.s
 
     def __ne__(self,other):
-        return other.s<>self.s
+        return other.s!=self.s
 
     def copy(self):
         return Poset(self.o)
@@ -121,10 +121,10 @@ class  Poset(object):
     __ge__ = issuperset
 
     def __lt__(self,other):
-        return (self<=other and len(self)<>len(other))
+        return (self<=other and len(self)!=len(other))
 
     def __gt__(self,other):
-        return (self>=other and len(self)<>len(other))
+        return (self>=other and len(self)!=len(other))
 
 
 #  rand_ortho1 returns a numpy.array representing
@@ -132,7 +132,7 @@ class  Poset(object):
 def  rand_ortho1(n):
     from random import SystemRandom
     r = SystemRandom()
-    pos = [r.random() for x in xrange(n)]
+    pos = [r.random() for x in range(n)]
     s = sum(pos)
     v = array(pos,dtype=float)-(s/len(pos))
     norm = sqrt(sum(v*v))
@@ -142,7 +142,11 @@ def  rand_ortho1(n):
 #------------------------------------------------------------------------------
 #TODO:  this was imported here from masr, but since we have
 #  here access to numpy.array, we could use it for vectors operations.
-def  intersect2lines((x1,y1),(x2,y2),(x3,y3),(x4,y4)):
+def  intersect2lines(xxx_todo_changeme, xxx_todo_changeme1, xxx_todo_changeme2, xxx_todo_changeme3):
+    (x1,y1) = xxx_todo_changeme
+    (x2,y2) = xxx_todo_changeme1
+    (x3,y3) = xxx_todo_changeme2
+    (x4,y4) = xxx_todo_changeme3
     b = (x2-x1,y2-y1)
     d = (x4-x3,y4-y3)
     det = b[0]*d[1] - b[1]*d[0]
@@ -188,7 +192,7 @@ def  intersectR(view,topt):
             return (x,y)
     # there can't be no intersection unless the endpoint was
     # inside the bb !
-    raise ValueError,'no intersection found (point inside ?!)'
+    raise ValueError('no intersection found (point inside ?!)')
 
 
 #------------------------------------------------------------------------------
@@ -215,7 +219,7 @@ def median_wh(views):
     mh = [v.h for v in views]
     mw.sort()
     mh.sort()
-    return (mw[len(mw)/2],mh[len(mh)/2])
+    return (mw[len(mw)//2],mh[len(mh)//2])
 
 #------------------------------------------------------------------------------
 #  setcurve returns the spline curve that path through the list of points P.
@@ -225,17 +229,17 @@ def median_wh(views):
 #  Wayne Tiller, Springer, 1997) and implements a local interpolation rather
 #  than a global interpolation.
 def setcurve(e,pts,tgs=None):
-    P = map(array,pts)
+    P = list(map(array,pts))
     n = len(P)
     # tangent estimation
     if tgs:
       assert len(tgs)==n
-      T = map(array,tgs)
+      T = list(map(array,tgs))
       Q = [ P[k+1]-P[k] for k in range(0,n-1)]
     else:
       Q,T = tangents(P,n)
     splines=[]
-    for k in xrange(n-1):
+    for k in range(n-1):
         t = T[k]+T[k+1]
         a = 16. - (t.dot(t))
         b = 12.*(Q[k].dot(t))
@@ -257,7 +261,7 @@ def tangents(P,n):
     assert n>=2
     Q = []
     T = []
-    for k in xrange(0,n-1):
+    for k in range(0,n-1):
         q = P[k+1]-P[k]
         t = q/sqrt(q.dot(q))
         Q.append(q)
@@ -267,7 +271,7 @@ def tangents(P,n):
 
 #------------------------------------------------------------------------------
 def setroundcorner(e,pts):
-    P = map(array,pts)
+    P = list(map(array,pts))
     n = len(P)
     Q,T = tangents(P,n)
     c0 = P[0]
@@ -335,7 +339,7 @@ class Dot:
                 try:
                     float(v)
                 except ValueError:
-                    print 'invalid numeral token: %s'%v
+                    print('invalid numeral token: %s'%v)
                     raise SyntaxError
             elif '.' in v: # forbidden in non-numeric
                 raise SyntaxError
@@ -379,7 +383,7 @@ class Dot:
             return t
 
         def t_ANY_error(self,t):
-            print "Illegal character '%s'" % t.value[0]
+            print("Illegal character '%s'" % t.value[0])
             t.lexer.skip(1)
 
         def build(self,**kargs):
@@ -391,7 +395,7 @@ class Dot:
             while 1:
                 tok = self._lexer.token()
                 if not tok: break
-                print tok
+                print(tok)
 
     # Classes for the AST returned by Parser: 
     class graph(object):
@@ -422,7 +426,7 @@ class Dot:
                     elif x.type=='edge' :
                         eattr.update(x.D)
                     else :
-                        raise TypeError,'invalid attribute type'
+                        raise TypeError('invalid attribute type')
                 elif isinstance(x,dict):
                     self.attr.update(x)
                 elif isinstance(x,Dot.node):
@@ -439,7 +443,7 @@ class Dot:
                                 self.nodes[n.name] = n
 
         def __repr__(self):
-            u = u'<%s instance at %x, name: %s, %d nodes>'%(
+            u = '<%s instance at %x, name: %s, %d nodes>'%(
                    self.__class__,
                    id(self),
                    self.name,
@@ -486,7 +490,7 @@ class Dot:
         def p_Graph_strict(self,p):
             '''Graph : strict graph name Block'''
             p[0] = Dot.graph(name=p[3],data=p[4],strict=1,direct=0)
-            print 'Dot.Parser: graph object %s created'%p[0].name
+            print('Dot.Parser: graph object %s created'%p[0].name)
 
         def p_Graph_graph(self,p):
             '''Graph : graph name Block'''
@@ -648,7 +652,7 @@ class Dot:
             p[0] = "%s:%s"%(p[1],p[2])
 
         def p_error(self,p):
-            print 'Syntax Error',p
+            print('Syntax Error',p)
             self._parser.restart()
 
         def build(self,**kargs):
@@ -661,7 +665,7 @@ class Dot:
         self.lexer  = Dot.Lexer()
         self.parser = Dot.Parser()
         if not _has_ply:
-            print 'warning: Dot parser not supported (install python-ply)'
+            print('warning: Dot parser not supported (install python-ply)')
 
     def parse(self,data):
         try:
@@ -670,10 +674,10 @@ class Dot:
             self.lexer.build(reflags=lex.re.UNICODE)
             self.parser.build()
         except:
-            print 'unexpected error'
+            print('unexpected error')
             return None
         try:
-            s = data.decode('utf-8')
+            s = data#.decode('utf-8')
         except UnicodeDecodeError:
             s = data
         L=self.parser._parser.parse(s,
@@ -681,6 +685,6 @@ class Dot:
         return L
 
     def read(self,filename):
-        f = file(filename,'r')
+        f = open(filename,'r')
         return self.parse(f.read())
 

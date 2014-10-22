@@ -5,9 +5,9 @@ from  grandalf.layouts import *
 
 import pdb
 
-v = range(1001)
+v = list(range(1001))
 V = [Vertex(x) for x in v]
-E = [Edge(V[x],V[x+1]) for x in xrange(1000)]
+E = [Edge(V[x],V[x+1]) for x in range(1000)]
 
 gr  = graph_core(V,E)
 for  v in gr.V(): v.view = VertexViewer(10,10)

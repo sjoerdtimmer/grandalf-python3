@@ -31,7 +31,7 @@ def test_lexer():
     ''')
 
 def test_utf8():
-    print Dot().read('samples/utf8.dot')
+    print(Dot().read('samples/utf8.dot'))
 
 if __name__ == '__main__':
 
@@ -40,17 +40,17 @@ if __name__ == '__main__':
     G  = []
 
     for  ast in L:
-        print "testing graph %s :"%ast.name,
+        print("testing graph %s :"%ast.name, end=' ')
         V = {}
         E = []
-        for k,x in ast.nodes.iteritems():
+        for k,x in ast.nodes.items():
             try:
                 v = Vertex(x.attr['label'])
             except (KeyError,AttributeError):
                 v = Vertex(x.name)
             v.view = VertexViewer(10,10)
             V[x.name] = v
-        print len(V)
+        print(len(V))
         edgelist = []
         for e in ast.edges: edgelist.append(e)
         for edot in edgelist:
@@ -58,9 +58,9 @@ if __name__ == '__main__':
             v2 = V[edot.n2.name]
             E.append(Edge(v1,v2))
         #mypdb.set_trace()
-        G.append(Graph(V.values(),E))
-        print "  [%d vertices]"%G[-1].order()
-        print "  [%d groups]"%len(G[-1].C)
+        G.append(Graph(list(V.values()),E))
+        print("  [%d vertices]"%G[-1].order())
+        print("  [%d groups]"%len(G[-1].C))
         for gr in G[-1].C:
         # Sugiyama algorithm applies only on directed acyclic graphs.
         # Of course if gr is undirected, it just means that setting a
@@ -75,26 +75,26 @@ if __name__ == '__main__':
         # now we need to find "roots" vertices.
         # The following algorithm finds all vertex with
         # no incoming edge :
-            r = filter(lambda x: len(x.e_in())==0, gr.sV)
+            r = [x for x in gr.sV if len(x.e_in())==0]
         ## if len(r)==0, there exist at least one cycle in gr.
         ## finding a "good" set of roots depends now on inverting
         ## some edges. 
-            print "    . %d verts, %d root(s)"%(gr.order(),len(r))
+            print("    . %d verts, %d root(s)"%(gr.order(),len(r)))
 
             if len(r)==0:
-                print 'no root found! default root is initial node.'
+                print('no root found! default root is initial node.')
                 r = [gr.sV.o[0]]
 
-            print 'using tarjan algorithm to find inverted_edges...'
+            print('using tarjan algorithm to find inverted_edges...')
             L = gr.get_scs_with_feedback(r)
 
             sug = SugiyamaLayout(gr)
 
-            sug.init_all(roots=r,inverted_edges=filter(lambda x:x.feedback, gr.sE))
+            sug.init_all(roots=r,inverted_edges=[x for x in gr.sE if x.feedback])
             sug.draw()
             #for s in sug.draw_step(): pass
-            for v,x in sug.grx.iteritems():
+            for v,x in sug.grx.items():
                 label = v.data if hasattr(v,'data') else '*'
-                print label, x, v.view.xy
-            print 'Sugiyama drawing done.'.ljust(80,'_')
+                print(label, x, v.view.xy)
+            print('Sugiyama drawing done.'.ljust(80,'_'))
 

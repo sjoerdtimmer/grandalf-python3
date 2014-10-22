@@ -2,9 +2,9 @@
 from grandalf.graphs import Vertex,Edge
 
 # define a larger graph found in paper ???
-v = range(30)
+v = list(range(30))
 V = [Vertex(x) for x in map(str,v)]
-D = dict(zip(v,V))
+D = dict(list(zip(v,V)))
 e = [(0,5), (0,29), (0,6), (0,20), (0,4),
      (17,3), (5,2), (5,10), (5,14), (5,26), (5,4), (5,3),
      (2,23), (2,8), (14,10), (26,18), (3,4),

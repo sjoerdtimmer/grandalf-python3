@@ -27,7 +27,7 @@ def  test_edge():
 def  test_graph():
     v = ('a','b','c','d')
     V = [Vertex(x) for x in v]
-    D = dict(zip(v,V))
+    D = dict(list(zip(v,V)))
     e = ['ab','ac','bc','cd']
     E = [Edge(D[xy[0]],D[xy[1]],data=xy) for xy in e]
     g1 = graph_core()
@@ -74,7 +74,7 @@ def  test_remove():
     try:
         cont = False
         g.remove_vertex(v1)
-    except ValueError,i:
+    except ValueError as i:
         cont = True
         assert i.args[0]==v1
     assert cont
@@ -97,7 +97,7 @@ def  test_remove():
 def  test_cycles():
     v = ('a','b','c','d','e','f','g','h')
     V = [Vertex(x) for x in v]
-    D = dict(zip(v,V))
+    D = dict(list(zip(v,V)))
     e = ['ab','bc','cd','be','ef','ea','fg','cg','gf','dh','hg','hd','dc','bf']
     E = [Edge(D[xy[0]],D[xy[1]],data=xy) for xy in e]
     g1 = graph_core(V,E)
