@@ -14,6 +14,7 @@
 from  numpy   import array,matrix,linalg
 from .utils   import rand_ortho1,median_wh
 from  sys     import getrecursionlimit,setrecursionlimit
+from  bisect  import bisect
 
 #  the VertexViewer class is responsible of providing
 #  graphical attributes associated with a Vertex.
@@ -85,22 +86,25 @@ class Layer(list):
     layout = None
     upper  = None
     lower  = None
+    __x    = 1.
+    ccount = None
 
     def __repr__(self):
         s  = '<Layer %d'%self.__r
         s += ', len=%d'%len(self)
-        x = sum(sum(self._crossings(),[]))
-        s += ', crossings=%d>'%x
+        xc = self.ccount or '?'
+        s += ', crossings=%s>'%xc
         return s
 
     def setup(self,layout):
         self.layout = layout
         r = layout.layers.index(self)
         self.__r=r
+        if len(self)>1: self.__x = 1./(len(self)-1)
         for i,v in enumerate(self):
             assert layout.grx[v].rank==r
             layout.grx[v].pos = i
-            layout.grx[v].bar = None
+            layout.grx[v].bar = i*self.__x
         if r>0:
             self.upper = layout.layers[r-1]
         if r<len(layout.layers)-1:
@@ -115,25 +119,27 @@ class Layer(list):
         sug = self.layout
         sug._edge_inverter()
         mvmt=[]
-        for v in self:
-            if sug.grx[v].dummy and v.constrainer:
-                mvmt.append(v)
-                continue
-            bar = self._meanvalueattr(v,sug.order_attr)
-            sug.grx[v].bar=bar
-        while len(mvmt)>0:
-            v = mvmt.pop()
-            v.bar = sug.grx[v.ctrl[self.__r][0]].bar
-        # now resort layers l according to positions:
-        self.sort(key=(lambda x: sug.grx[x].bar))
-        # assign new position in layer l:
-        for i,v in enumerate(self):
-            if sug.grx[v].pos!=i: mvmt.append(v)
-            sug.grx[v].bar = sug.grx[v].pos = i
-        # count resulting crossings:
-        self._ordering_reduce_crossings()
-        #self._ordering_reduce_crossings() # re-reduce crossings ?
+        c = self._cc()
+        if c>0:
+            for v in self:
+                if sug.grx[v].dummy and v.constrainer:
+                    mvmt.append(v)
+                    continue
+                bar = self._meanvalueattr(v,sug.order_attr)
+                sug.grx[v].bar=bar
+            while len(mvmt)>0:
+                v = mvmt.pop()
+                v.bar = sug.grx[v.ctrl[self.__r][0]].bar
+            # now resort layers l according to bar value:
+            self.sort(key=(lambda x: sug.grx[x].bar))
+            # assign new position in layer l:
+            for i,v in enumerate(self):
+                if sug.grx[v].pos!=i: mvmt.append(v)
+                sug.grx[v].bar = sug.grx[v].pos = i
+            # try count resulting crossings:
+            c = self._ordering_reduce_crossings()
         self.layout._edge_inverter()
+        self.ccount = c
         return mvmt
 
     # find new position of vertex v according to adjacency in prevlayer.
@@ -142,7 +148,7 @@ class Layer(list):
     def _meanvalueattr(self,v,att='bar'):
         sug = self.layout
         if sug.grx[v].dummy and v.constrainer:
-            return self.index(v.ctrl[self.__r][0])
+            return v.ctrl[self.__r][0].bar
         if not self.prevlayer():
             return getattr(sug.grx[v],att)
         pos = [getattr(sug.grx[x],att) for x in self._neighbors(v)]
@@ -210,6 +216,22 @@ class Layer(list):
             del candidates
         return P
 
+    # implementation of the efficient bilayer cross counting by insert-sort
+    # (see Barth & Mutzel paper "Simple and Efficient Bilayer Cross Counting")
+    def _cc(self):
+        g=self.layout.grx
+        P=[]
+        for v in self:
+            P.extend(sorted([g[x].pos for x in self._neighbors(v)]))
+        # count inversions in P:
+        s = []
+        count = 0
+        for i,p in enumerate(P):
+            j = bisect(s,p)
+            if j<i: count += (i-j)
+            s.insert(j,p)
+        return count
+
     def _ordering_reduce_crossings(self):
         assert self.layout.dag
         g = self.layout.grx
@@ -226,7 +248,6 @@ class Layer(list):
                 Xji += len(ni)-x
             if Xji<Xij:
                 g[vi].pos,g[vj].pos = g[vj].pos,g[vi].pos
-                g[vi].bar,g[vj].bar = g[vj].bar,g[vi].bar
                 self[i] = vj
                 self[j] = vi
                 X += Xji
@@ -278,20 +299,22 @@ class  SugiyamaLayout(object):
         # assign rank to all vertices:
         self.rank_all(roots)
         # add dummy vertex/edge for 'long' edges:
-        self.ctrls['cons']=cons
+        self.ctrls['cons']=cons  # use "constrained edges" ?
         for e in self.g.E():
             self.setdummies(e,cons)
         # precompute some layers values:
         for l in self.layers: l.setup(self)
-        # assign initial order in each layer:
-        self._ordering_init()
 
     # compute every node coordinates after converging to optimal ordering by N
     # rounds, and finally perform the edge routing.
-    def draw(self,N=None):
-        if not N: N=1
-        for i in range(N):
-            for s in self.ordering_step(): pass
+    def draw(self,N=1.5):
+        while N>0.5:
+            for (l,mvmt) in self.ordering_step():
+                pass
+            N = N-1
+        if N>0:
+            for (l,mvmt) in self.ordering_step(oneway=True):
+                pass
         self.setxy()
         self.draw_edges()
 
@@ -362,18 +385,13 @@ class  SugiyamaLayout(object):
 
     def setrank(self,v):
         assert self.dag
-        #assert self.grx[v].rank==None
         r=max([self.grx[x].rank for x in v.N(-1)]+[-1])+1
         self.grx[v].rank=r
         # add it to its layer:
         try:
             self.layers[r].append(v)
-            #self.grx[v].pos = self.layers[r].index(v)
-            #self.grx[v].bar = None
         except IndexError:
             self.layers.append(Layer([v]))
-            #self.grx[v].pos = 0
-            #self.grx[v].bar = None
 
     def dummyctrl(self,r,ctrl):
         dv = DummyVertex(r)
@@ -411,37 +429,30 @@ class  SugiyamaLayout(object):
                 ctrl[r0+1][0].controlled=True
                 ctrl[r1-1][0].controlled=True
 
-    def _ordering_init(self):
-        if len(self.layers)>0:
-            delta = max(list(map(len,self.layers)))/2.
-            # set bar for layer 0:
-            l = len(self.layers[0])
-            if l==1: s=delta-l
-            else : s=delta-l/2.
-            for v in self.layers[0]:
-                s += l
-                self.grx[v].bar = s
 
     # iterator that computes all node coordinates and edge routing after
     # just one step (one layer after the other from top to bottom to top).
     # Purely inefficient ! Use it only for "animation" or debugging purpose.
-    def draw_step(self,verbose=False):
-        ostep = self.ordering_step(verbose)
+    def draw_step(self):
+        ostep = self.ordering_step()
         for s in ostep:
             self.setxy()
             self.draw_edges()
-            print(s)
             yield s
 
-    def ordering_step(self,verbose=False):
+    def ordering_step(self,oneway=False):
         self.dirv=-1
+        crossings = 0
         for l in self.layers:
             mvmt = l.order()
-            yield (l,mvmt) if verbose else None
+            crossings += l.ccount
+            yield (l,mvmt)
+        if oneway or (crossings == 0):
+            return
         self.dirv=+1
         while l:
             mvmt = l.order()
-            yield (l,mvmt) if verbose else None
+            yield (l,mvmt)
             l = l.nextlayer()
 
     # algorithm by Brandes & Kopf:
